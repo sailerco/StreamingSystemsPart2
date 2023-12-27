@@ -1,4 +1,4 @@
-package org.example;
+package org.example.Kafka;
 
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -11,18 +11,20 @@ import java.util.Properties;
 import java.util.UUID;
 import java.util.stream.StreamSupport;
 
-import static org.example.Main.env;
+import static org.example.Main.topic;
+
+//import static org.example.Main.env;
 
 public class Consumer {
-    //static String bootstrapServers = "localhost:29092";
-    static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
-    static String topicName = "Measurements";
+    static String bootstrapServers = "localhost:29092";
+    //static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
+    //static String topicName = "Measurements";
     KafkaConsumer<Integer, String> consumer;
     ConsumerRecords<Integer, String> records;
 
     public Consumer() {
         consumer = new KafkaConsumer<>(getKafkaProperties());
-        consumer.subscribe(Collections.singletonList(topicName));
+        consumer.subscribe(Collections.singletonList(topic));
     }
 
     private Properties getKafkaProperties() {
@@ -39,8 +41,9 @@ public class Consumer {
         records = consumer.poll(time);
         //System.out.println("size of records polled is " + records.count() + " ");
         for (ConsumerRecord<Integer, String> record : records) {
-            System.out.println(record.value() + " was received at " + record.offset());
-            //            System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
+            System.out.println(record.value());
+            //System.out.println(record.value() + " was received at " + record.offset());
+            //System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
         }
 
         return StreamSupport.stream(records.spliterator(), false).toList().stream().map(record -> record.value()).toList();

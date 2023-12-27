@@ -1,4 +1,4 @@
-package org.example;
+package org.example.Kafka;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -6,14 +6,14 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import java.util.ArrayList;
 import java.util.Properties;
 
-import static org.example.Main.env;
+import static org.example.Main.topic;
 
 //import static org.example.Main.env;
 
 public class Producer {
-    //static String bootstrapServers = "localhost:29092";
-    static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
-    static String topic = "Measurements";
+    static String bootstrapServers = "localhost:29092";
+    //static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
+    //static String topic = "Measurements";
     static KafkaProducer producer;
 
     public Producer() {

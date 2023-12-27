@@ -1,32 +1,23 @@
 package org.example;
 
-import no.nav.common.KafkaEnvironment;
+import org.example.DataProcessing.Processor;
+import org.example.Kafka.KafkaTopicCreator;
+import org.example.Kafka.Producer;
 
 import java.text.ParseException;
-import java.util.Arrays;
-import java.util.Properties;
+import java.util.UUID;
 
-import static java.util.Collections.emptyList;
+import static org.example.TestGenerator.sensorCount;
 
 public class Main {
-    public static KafkaEnvironment env = new KafkaEnvironment(
-            1,
-            Arrays.asList("Measurements"),
-            emptyList(),
-            false,
-            false,
-            emptyList(),
-            false,
-            new Properties()
-    );
-
-    static int sensorCount = 5;
-
-    static int timeframe = 1000;
+    static int batchSize = 10;
+    static int timeframe = 30000;
     static Producer producer = new Producer();
 
+    public static String topic = "Measurements" + UUID.randomUUID(); //random topic for testing purposes
+
     public static void main(String[] args) throws InterruptedException {
-        env.start();
+        new KafkaTopicCreator().createTopic(topic, 1);
         Processor processor = new Processor();
 
         Thread t = new Thread(() -> {
@@ -41,11 +32,10 @@ public class Main {
         t.setName("Consume Data");
         t.start();
         Thread.sleep(5000);
-        new TestGenerator().generateTestDataBatch();
+        new TestGenerator().generateTestDataBatch(batchSize);
 
-        while (true) {
-            Thread.sleep(1000);
-            processor.calculateAverageSpeedForSensorsOverTime(sensorCount, timeframe);
-        }
+        Thread.sleep(1000);
+        processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe);
+        processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
     }
 }
