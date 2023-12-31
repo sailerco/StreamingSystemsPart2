@@ -8,12 +8,8 @@ import java.util.Properties;
 
 import static org.example.Main.topic;
 
-//import static org.example.Main.env;
-
 public class Producer {
     static String bootstrapServers = "localhost:29092";
-    //static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
-    //static String topic = "Measurements";
     static KafkaProducer producer;
 
     public Producer() {
@@ -30,7 +26,6 @@ public class Producer {
     }
 
     public void sendMessage(String data) {
-        //todo:
         String a = "hi";
         ProducerRecord<String, String> message = new ProducerRecord<>(topic, a, data);
         producer.send(message);
@@ -41,6 +36,9 @@ public class Producer {
         for(String entry : data) {
             ProducerRecord<String, String> message = new ProducerRecord<>(topic, a, entry);
             producer.send(message);
+            /*Future<RecordMetadata> future = producer.send(message);
+            RecordMetadata metadata = future.get();
+            System.out.println(String.valueOf(metadata.partition()));*/
         }
         producer.flush();
     }

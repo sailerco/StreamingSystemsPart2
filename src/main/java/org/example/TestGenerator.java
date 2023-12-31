@@ -1,12 +1,12 @@
 package org.example;
 
+import org.example.Kafka.Producer;
+
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
-
-import static org.example.Main.producer;
 
 public class TestGenerator {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -15,7 +15,7 @@ public class TestGenerator {
     static int minSpeed = 20; //m/s
     static int maxSpeed = 30; //m/s
     static int maxMeasurementCount = 4; //Maximum number of possible measured values
-    static Date timestamp;
+    static Date timestamp = new Date();
     static int sensorCount = 3;
     private static Random random = new Random();
 
@@ -49,12 +49,11 @@ public class TestGenerator {
             return random.nextInt(maxMeasurementCount) + 1;
     }
 
-    public void generateTestDataBatch(int batchSize) {
+    public void generateTestDataBatch(Producer producer, int batchSize) {
         ArrayList<String> data = new ArrayList<>();
-        timestamp = new Date();
         for (int i = 0; i < batchSize; i++) {
             data.add(generateTestData(sensorCount));
         }
-        producer.sendMessageList(data); //sends data in a batch
+        producer.sendMessageList(data); //sends data in a batch //TODO: Should now also try non batch method
     }
 }

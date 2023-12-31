@@ -13,12 +13,8 @@ import java.util.stream.StreamSupport;
 
 import static org.example.Main.topic;
 
-//import static org.example.Main.env;
-
 public class Consumer {
     static String bootstrapServers = "localhost:29092";
-    //static String bootstrapServers = "localhost:" + env.getBrokers().getFirst().getPort();
-    //static String topicName = "Measurements";
     KafkaConsumer<Integer, String> consumer;
     ConsumerRecords<Integer, String> records;
 
