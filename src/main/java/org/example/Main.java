@@ -31,11 +31,11 @@ public class Main {
             }
         });
         t.start();
-        Thread.sleep(5000);
+        Thread.sleep(4000);
 
         while (true) {
-            new TestGenerator().generateTestDataBatch(producer, batchSize);
-            Thread.sleep(1000);
+            new TestGenerator().generate(producer, batchSize);
+            Thread.sleep(100);
             printAvg(processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe));
             processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
         }
@@ -43,13 +43,10 @@ public class Main {
 
     public static void printAvg(Map<String, Map<Integer, Double>> avgs) {
         avgs.forEach((sensor, timeAndSpeeds) -> {
-            if (timeAndSpeeds.isEmpty())
-                System.out.println("Sensor " + sensor + " has not detected any speed");
+            if (timeAndSpeeds.isEmpty()) System.out.println("Sensor " + sensor + " has not detected any speed");
             else {
                 System.out.print("Sensor " + sensor + " | timeframe(s) of length: " + timeframe + "ms | average speeds: ");
-                timeAndSpeeds.forEach((window, speed) -> {
-                    System.out.print(String.format(Locale.US, "%.2f km/h (window number %d); ", speed, window));
-                });
+                timeAndSpeeds.forEach((window, speed) -> System.out.printf(Locale.US, "%.2f km/h (window number %d); ", speed, window));
                 System.out.println();
             }
         });

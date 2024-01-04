@@ -3,7 +3,6 @@ package org.example.Kafka;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import java.util.ArrayList;
 import java.util.Properties;
 
 import static org.example.Main.topic;
@@ -26,20 +25,7 @@ public class Producer {
     }
 
     public void sendMessage(String data) {
-        String a = "hi";
-        ProducerRecord<String, String> message = new ProducerRecord<>(topic, a, data);
+        ProducerRecord<String, String> message = new ProducerRecord<>(topic, "TestData", data);
         producer.send(message);
-    }
-
-    public void sendMessageList(ArrayList<String> data) {
-        String a = "test";
-        for(String entry : data) {
-            ProducerRecord<String, String> message = new ProducerRecord<>(topic, a, entry);
-            producer.send(message);
-            /*Future<RecordMetadata> future = producer.send(message);
-            RecordMetadata metadata = future.get();
-            System.out.println(String.valueOf(metadata.partition()));*/
-        }
-        producer.flush();
     }
 }

@@ -3,7 +3,6 @@ package org.example;
 import org.example.Kafka.Producer;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
@@ -19,7 +18,7 @@ public class TestGenerator {
     static int sensorCount = 3;
     private static Random random = new Random();
 
-    public static String generateTestData(int sensorCount) {
+    public static String generateTestData() {
         timestamp = new Date(timestamp.getTime() + getRandomDelay());
         int sensorName = random.nextInt(sensorCount) + 1; //Random ID for Sensor between 1 and sensorCount
         int measurementCount = randomMeasurementCount();
@@ -38,10 +37,11 @@ public class TestGenerator {
     }
 
     //random delay between 2 measured data
-    private static int getRandomDelay() {
+    public static int getRandomDelay() {
         return m1 + random.nextInt(m2 - m1 + 1);
     }
 
+    //random number of measurements, there is a 10% probability for it to be 0
     public static int randomMeasurementCount() {
         if (random.nextDouble() < 0.1)
             return 0;
@@ -49,11 +49,9 @@ public class TestGenerator {
             return random.nextInt(maxMeasurementCount) + 1;
     }
 
-    public void generateTestDataBatch(Producer producer, int batchSize) {
-        ArrayList<String> data = new ArrayList<>();
+    public void generate(Producer producer, int batchSize){
         for (int i = 0; i < batchSize; i++) {
-            data.add(generateTestData(sensorCount));
+            producer.sendMessage(generateTestData());
         }
-        producer.sendMessageList(data); //sends data in a batch //TODO: Should now also try non batch method
     }
 }

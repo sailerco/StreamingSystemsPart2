@@ -10,7 +10,7 @@ public class Processor {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     Consumer consumer = new Consumer();
     List<Data> results = new ArrayList<>();
-    Map<String, Map<Integer, Double>> processedData = new HashMap<>(); //ID : (Time, Speed)
+    Map<String, Map<Integer, Double>> avgOfProcessedData = new HashMap<>(); //ID : (Time, Speed)
 
     public void consumeData() throws ParseException {
         processData(consumer.getData(1000));
@@ -43,24 +43,25 @@ public class Processor {
         for (int i = 1; i <= sensorCount; i++) {
             Map<Long, ArrayList<Double>> speedsAtTime = getTimeAndSpeedOfID(i + "");
             if (!speedsAtTime.isEmpty()) {
-                processedData.put(i + "", calculateInTimeframe(speedsAtTime, new HashMap<>(), timeframe));
+                avgOfProcessedData.put(i + "", calculateInTimeframe(speedsAtTime, new HashMap<>(), timeframe));
             }
         }
-        return processedData;
+        return avgOfProcessedData;
     }
 
     //computes the avg speed over the given sensor seq and at a specific timeframe number (Aufgabe 2)
-    public void calculatesAvgSpeedInSection(String[] sensorSeq, int timeframeNumber, int timeframe) {
+    public double calculatesAvgSpeedInSection(String[] sensorSeq, int timeframeNumber, int timeframe) {
         ArrayList<Double> avgSpeeds = new ArrayList<>();
         for (String id : sensorSeq) {
-            if (processedData.get(id) != null && processedData.get(id).get(timeframeNumber) != null)
-                avgSpeeds.add(processedData.get(id).get(timeframeNumber));
+            if (avgOfProcessedData.get(id) != null && avgOfProcessedData.get(id).get(timeframeNumber) != null)
+                avgSpeeds.add(avgOfProcessedData.get(id).get(timeframeNumber));
         }
         double res = calculateAvgInKMH(avgSpeeds, false);
         System.out.println("In the " + timeframeNumber + "# time-window there was a avg speed of "
                 + String.format(Locale.US, "%.2f", res) + "km/h over the sensor sequence " + Arrays.toString(sensorSeq));
         Pair<Date> window = getTimeframeRange(timeframeNumber, timeframe);
         System.out.println("--> Time window was between " + window.first() + " and " + window.second());
+        return res;
     }
 
 
@@ -96,7 +97,7 @@ public class Processor {
     }
 
     //calculation of avg speed in km/h (can be used for values in km/h or m/s)
-    private double calculateAvgInKMH(List<Double> speeds, Boolean meterPerSecond) {
+    public double calculateAvgInKMH(List<Double> speeds, Boolean meterPerSecond) {
         double sum = 0;
         for (double speed : speeds) {
             if (meterPerSecond) sum += speed * 3.6;

@@ -1,28 +1,24 @@
 package org.example.DataProcessing;
 
-import org.example.Kafka.Producer;
-import org.example.TestGenerator;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.text.ParseException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
 
 class ProcessorTest {
-    static ArrayList<String> t = new ArrayList<>();
     static ArrayList<String> data = new ArrayList<>();
-    Processor processor = new Processor();
+    static Processor processor = new Processor();
     int timeframe = 30000;
 
     @BeforeAll
-    static void set() {
+    static void set() throws ParseException {
         data.add("2023-12-31T10:28:49.685Z 2 -15.85,21.21,28.48,21.60");
         data.add("2023-12-31T10:28:57.261Z 1 27.48,22.03");
         data.add("2023-12-31T10:29:06.918Z 1 -24.44");
@@ -33,28 +29,12 @@ class ProcessorTest {
         data.add("2023-12-31T10:29:48.062Z 3 21.53,26.26,28.28,21.46");
         data.add("2023-12-31T10:29:55.353Z 2 ");
         data.add("2023-12-31T10:30:03.473Z 1 26.23,23.51,-10.93");
-        /*
-        Sensor 1 | timeframe(s) of length: 30000ms | average speeds: 89.12 km/h (window number 0), 90.81 km/h (window number 1), 89.53 km/h (window number 2).
-        Sensor 2 | timeframe(s) of length: 30000ms | average speeds: 89.58 km/h (window number 0).
-        Sensor 3 | timeframe(s) of length: 30000ms | average speeds: 88.76 km/h (window number 1).
-        * */
-    }
-
-    @BeforeEach
-    void setUp() {
-        Producer p = mock(Producer.class);
-
-        TestGenerator test = new TestGenerator();
-        doAnswer(invocation -> {
-            t = invocation.getArgument(0);
-            return null;
-        }).when(p).sendMessageList(any());
-        test.generateTestDataBatch(p, 10);
+        processor.processData(data);
     }
 
     @Test
-    void processData() throws ParseException {
-        processor.processData(data);
+        //checks that no empty nor negative values are used in the data processor
+    void processData() {
         processor.results.forEach(result -> {
             assertFalse(result.speed.isEmpty());
             assertFalse(result.speed.stream().anyMatch(n -> n < 0));
@@ -62,19 +42,30 @@ class ProcessorTest {
     }
 
     @Test
-    void calculateAvgForEachSensorInTimeframe() throws ParseException {
-
-        processor.processData(data);
-        processor.calculateAvgForEachSensorInTimeframe(1, timeframe);
+    void calculateAvgForEachSensorInTimeframe() {
+        Map<String, Map<Integer, Double>> processed = processor.calculateAvgForEachSensorInTimeframe(3, timeframe);
+        assertEquals(3, processed.size());
         //check if number of frames are correct
         long first = processor.results.getFirst().timestamp.getTime();
         long last = processor.results.getLast().timestamp.getTime();
-        int frame = (int) ((last - first) / timeframe);
-        assertEquals(frame, processor.processedData.get("1").size() - 1);
+        assertEquals((int) ((last - first) / timeframe), processor.avgOfProcessedData.get("1").size() - 1);
     }
 
     @Test
     void calculatesAvgSpeedInSection() {
+        processor.avgOfProcessedData.put("1", Map.of(0, 10.0));
+        processor.avgOfProcessedData.put("2", Map.of(0, 15.0));
+        processor.avgOfProcessedData.put("3", Map.of(0, 20.0));
+        double result = processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
+        assertEquals(15.0, result);
+    }
 
+    @Test
+    void calculateAvgInKMH() {
+        List<Double> speeds = Arrays.asList(10.0, 15.0, 20.0);
+        double avgSpeed = processor.calculateAvgInKMH(speeds, true);
+        assertEquals(54.0, avgSpeed);
+        avgSpeed = processor.calculateAvgInKMH(speeds, false);
+        assertEquals(15.0, avgSpeed);
     }
 }
