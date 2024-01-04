@@ -9,7 +9,8 @@ import java.util.*;
 public class Processor {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     Consumer consumer = new Consumer();
-    List<Data> results = new ArrayList<>();
+    //List<Data> results = new ArrayList<>();
+    TreeSet<Data> results = new TreeSet<>(Comparator.comparing(Data::getDate)); //TODO: think about an alternative because this could lead to performance issues
     Map<String, Map<Integer, Double>> avgOfProcessedData = new HashMap<>(); //ID : (Time, Speed)
 
     public void consumeData() throws ParseException {
@@ -108,14 +109,16 @@ public class Processor {
 
     //returns the timeframe number based on the first occurring ate and the timeframe
     private int getTimeframeNumber(long time, int timeframe) {
-        long first = results.getFirst().timestamp.getTime();
+        //long first = results.getFirst().timestamp.getTime();
+        long first = results.first().timestamp.getTime();
         if (time >= first) return (int) ((time - first) / timeframe);
         else return -1;
     }
 
     //returns the start and end date based on the given timeframe number
     private Pair<Date> getTimeframeRange(int timeframeNumber, int timeframe) {
-        long first = results.getFirst().timestamp.getTime();
+        //long first = results.getFirst().timestamp.getTime();
+        long first = results.first().timestamp.getTime();
 
         long start = first + ((long) timeframe * timeframeNumber);
         long end = first + ((long) timeframe * (timeframeNumber + 1));

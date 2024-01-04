@@ -13,4 +13,9 @@ public class Data {
         this.id = id;
         this.speed = speed;
     }
+
+
+    public Date getDate() {
+        return timestamp;
+    }
 }

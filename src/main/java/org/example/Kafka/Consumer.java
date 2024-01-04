@@ -37,7 +37,8 @@ public class Consumer {
         records = consumer.poll(time);
         //System.out.println("size of records polled is " + records.count() + " ");
         for (ConsumerRecord<Integer, String> record : records) {
-            System.out.println(record.value());
+            System.out.println(record.value() + " at partitions " + record.partition());
+
             //System.out.println(record.value() + " was received at " + record.offset());
             //System.out.println("Received message: (" + record.key() + ", " + record.value() + ") at offset " + record.offset());
         }

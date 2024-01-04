@@ -46,8 +46,8 @@ class ProcessorTest {
         Map<String, Map<Integer, Double>> processed = processor.calculateAvgForEachSensorInTimeframe(3, timeframe);
         assertEquals(3, processed.size());
         //check if number of frames are correct
-        long first = processor.results.getFirst().timestamp.getTime();
-        long last = processor.results.getLast().timestamp.getTime();
+        long first = processor.results.first().timestamp.getTime();
+        long last = processor.results.last().timestamp.getTime();
         assertEquals((int) ((last - first) / timeframe), processor.avgOfProcessedData.get("1").size() - 1);
     }
 

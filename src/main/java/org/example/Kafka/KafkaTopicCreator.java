@@ -3,6 +3,7 @@ package org.example.Kafka;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
+import org.example.TestGenerator;
 
 import java.util.Collections;
 import java.util.Properties;

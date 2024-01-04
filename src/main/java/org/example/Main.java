@@ -17,7 +17,7 @@ public class Main {
     static int timeframe = 30000;
 
     public static void main(String[] args) throws InterruptedException {
-        new KafkaTopicCreator().createTopic(topic, 1);
+        new KafkaTopicCreator().createTopic(topic, TestGenerator.sensorCount);
         Producer producer = new Producer();
         Processor processor = new Processor();
 
@@ -33,8 +33,10 @@ public class Main {
         t.start();
         Thread.sleep(4000);
 
-        while (true) {
+        //while (true) {
+        for (int i = 0; i < 1; i++) {
             new TestGenerator().generate(producer, batchSize);
+            //new TestGenerator().test(producer);
             Thread.sleep(100);
             printAvg(processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe));
             processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
