@@ -50,6 +50,7 @@ public class Processor {
     }
 
     //computes the avg speed over the given sensor seq and at a specific timeframe number (Aufgabe 2)
+    //TODO: was will er? Das mit Zeitpunkt macht kein Sinn
     public double calculatesAvgSpeedInSection(String[] sensorSeq, int timeframeNumber, int timeframe) {
         ArrayList<Double> avgSpeeds = new ArrayList<>();
         for (String id : sensorSeq) {
@@ -69,8 +70,9 @@ public class Processor {
     private Map<Integer, Double> calculateInTimeframe(Map<Long, ArrayList<Double>> speedsAtTime, Map<Integer, Double> timeFrameSpeedsMap, int timeFrame) {
         Map<Long, ArrayList<Double>> copy = new LinkedHashMap<>();
         ArrayList<Double> speedsInFrame = new ArrayList<>();
-        long startTime = speedsAtTime.entrySet().iterator().next().getKey();
+        long startTime = getTime(speedsAtTime.entrySet().iterator().next().getKey(), timeFrame); //TODO: was wenn die Zeit erst nach dem neuen Zeitfenster ist?
 
+        //fügen alle Zeiten vom Zeitfenster in ein Array, rausfallende zwischenspeichern in copy map
         for (Map.Entry<Long, ArrayList<Double>> entry : speedsAtTime.entrySet()) {
             long currentTime = entry.getKey();
             if (currentTime - startTime < timeFrame) speedsInFrame.addAll(entry.getValue());
@@ -106,11 +108,17 @@ public class Processor {
         return sum / speeds.size();
     }
 
-    //returns the timeframe number based on the first occurring ate and the timeframe
+    //returns the timeframe number based on the first occurring at and the timeframe
     private int getTimeframeNumber(long time, int timeframe) {
         long first = results.getFirst().timestamp.getTime();
         if (time >= first) return (int) ((time - first) / timeframe);
         else return -1;
+    }
+
+    private long getTime(long time, int timeframe){
+        int n = getTimeframeNumber(time, timeframe);
+        long first = results.getFirst().timestamp.getTime();
+        return first + ((long) timeframe * n);
     }
 
     //returns the start and end date based on the given timeframe number
