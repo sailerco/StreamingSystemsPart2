@@ -14,7 +14,9 @@ repositories {
 }
 
 dependencies {
-    //implementation("no.nav:kafka-embedded-env:3.2.4")
+    implementation("org.apache.beam:beam-runners-direct-java:2.52.0")
+    implementation("org.apache.beam:beam-sdks-java-io-kafka:2.52.0")
+    implementation("org.apache.beam:beam-sdks-java-core:2.52.0")
     implementation("org.apache.kafka:kafka-clients:3.6.1")
     implementation("ch.qos.logback:logback-classic:1.4.14")
     testImplementation("org.mockito:mockito-core:5.8.0")

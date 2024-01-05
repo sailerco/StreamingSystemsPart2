@@ -1,20 +1,18 @@
 package org.example.DataProcessing;
 
-import org.example.Kafka.Consumer;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class Processor {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    Consumer consumer = new Consumer();
+    //Consumer consumer = new Consumer();
     List<Data> results = new ArrayList<>();
     Map<String, Map<Integer, Double>> avgOfProcessedData = new HashMap<>(); //ID : (Time, Speed)
 
-    public void consumeData() throws ParseException {
+    /*public void consumeData() throws ParseException {
         processData(consumer.getData(1000));
-    }
+    }*/
 
     //prepares Data from consumer, for example negative values or empty values are ignored.
     public void processData(List<String> dataEntries) throws ParseException {
