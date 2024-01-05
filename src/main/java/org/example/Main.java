@@ -17,7 +17,7 @@ public class Main {
     static int timeframe = 30000;
 
     public static void main(String[] args) throws InterruptedException {
-        new KafkaTopicCreator().createTopic(topic, TestGenerator.sensorCount);
+        new KafkaTopicCreator().createTopic(topic, 3);
         Producer producer = new Producer();
         Processor processor = new Processor();
 

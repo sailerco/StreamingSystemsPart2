@@ -16,7 +16,7 @@ public class TestGenerator {
     static int maxSpeed = 30; //m/s
     static int maxMeasurementCount = 4; //Maximum number of possible measured values
     static Date timestamp = new Date();
-    public static int sensorCount = 3;
+    public static int sensorCount = 5;
     private static Random random = new Random();
     static int sensorName;
     public static String generateTestData() {

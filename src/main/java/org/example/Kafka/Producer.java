@@ -31,5 +31,7 @@ public class Producer {
 
     public void sendMessage(String data, int partition) {
         producer.send(new ProducerRecord<>(topic, partition+"", data));
+        //TODO: Keys nicht auf random Partitions verteilen sondern Key 1 auf Partition 1 und so
+        //man kann dem Producer Record eine Partition mitgeben aber dann schmiert es ab
     }
 }
