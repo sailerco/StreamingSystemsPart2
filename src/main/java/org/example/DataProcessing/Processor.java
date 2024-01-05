@@ -70,7 +70,7 @@ public class Processor {
     private Map<Integer, Double> calculateInTimeframe(Map<Long, ArrayList<Double>> speedsAtTime, Map<Integer, Double> timeFrameSpeedsMap, int timeFrame) {
         Map<Long, ArrayList<Double>> copy = new LinkedHashMap<>();
         ArrayList<Double> speedsInFrame = new ArrayList<>();
-        long startTime = speedsAtTime.entrySet().iterator().next().getKey();
+        long startTime = getTime(speedsAtTime.entrySet().iterator().next().getKey(), timeFrame);
 
         for (Map.Entry<Long, ArrayList<Double>> entry : speedsAtTime.entrySet()) {
             long currentTime = entry.getKey();
@@ -114,7 +114,11 @@ public class Processor {
         if (time >= first) return (int) ((time - first) / timeframe);
         else return -1;
     }
-
+    private long getTime(long time, int timeframe){
+        int n = getTimeframeNumber(time, timeframe);
+        long first = results.getFirst().timestamp.getTime();
+        return first + ((long) timeframe * n);
+    }
     //returns the start and end date based on the given timeframe number
     private Pair<Date> getTimeframeRange(int timeframeNumber, int timeframe) {
         //long first = results.getFirst().timestamp.getTime();
