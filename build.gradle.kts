@@ -14,6 +14,7 @@ repositories {
 }
 
 dependencies {
+    implementation("org.apache.logging.log4j:log4j-slf4j-impl:2.22.1")
     implementation("org.apache.beam:beam-runners-direct-java:2.52.0")
     implementation("org.apache.beam:beam-sdks-java-io-kafka:2.52.0")
     implementation("org.apache.beam:beam-sdks-java-core:2.52.0")
