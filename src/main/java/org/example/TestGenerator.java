@@ -14,7 +14,7 @@ import java.util.Locale;
 import java.util.Random;
 
 import static org.apache.beam.model.pipeline.v1.RunnerApi.StandardCoders.Enum.KV;
-import static org.example.Main.topic;
+import static org.example.Test.topic;
 
 public class TestGenerator {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");

@@ -1,4 +1,4 @@
-package org.example;
+/*package org.example;
 
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.KvCoder;
@@ -88,7 +88,7 @@ public class Main {
                         Instant timestamp = new Instant(input.timestamp.getTime() + 1000);
                         out.outputWithTimestamp(input, timestamp);
                     }
-                }))*/ //TODO: the Code just works when we do not have this function or not the groupby, find a solution
+                })) //TODO: the Code just works when we do not have this function or not the groupby, find a solution
                 .apply("TimeWindow", Window.<Data>into(FixedWindows.of(Duration.standardSeconds(10))))
                 .apply(WithKeys.of(data -> {
                     assert data != null;
@@ -103,7 +103,7 @@ public class Main {
                         System.out.println(input.getKey() + " " + input.getValue());
                     }
                 }));
-                /*.apply("avgForEachSensor", ParDo.of(new DoFn<KV<String, Iterable<Data>>, Double>() {
+                .apply("avgForEachSensor", ParDo.of(new DoFn<KV<String, Iterable<Data>>, Double>() {
                     @ProcessElement
                     public void avg(@Element KV<String, Iterable<Data>> input, OutputReceiver<Double> out) {
                         double sum = 0;
@@ -152,7 +152,7 @@ public class Main {
                         System.out.println(input);
                     }
                 }));*/
-        p.run().waitUntilFinish();
+/*        p.run().waitUntilFinish();
     }
 
     public static void printAvg(Map<String, Map<Integer, Double>> avgs) {
@@ -165,4 +165,4 @@ public class Main {
             }
         });
     }
-}
+}*/
