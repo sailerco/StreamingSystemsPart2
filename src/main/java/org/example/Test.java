@@ -3,6 +3,8 @@ package org.example;
 import org.apache.beam.sdk.Pipeline;
 import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
+import org.apache.beam.sdk.metrics.Counter;
+import org.apache.beam.sdk.metrics.Metrics;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
 import org.apache.beam.sdk.transforms.*;
@@ -17,10 +19,7 @@ import org.joda.time.Duration;
 import org.joda.time.Instant;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 public class Test {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
@@ -29,6 +28,9 @@ public class Test {
     static int timeframe = 30000;
     static String bootstrapServers = "localhost:29092";
     static String[] sensorgroup = new String[]{"1", "2"};
+
+    static Map<String, List<Double>> sensorsThroughTime =  new HashMap<>();
+    static int windowCount = 0;
 
 
     public static void main(String[] args) throws InterruptedException {
@@ -90,6 +92,19 @@ public class Test {
                     @ProcessElement
                     public void processElement(@Element Double input, OutputReceiver<Double> out) {
                         System.out.println("Avg over the current time window and given sequence " + input);
+
+                        windowCount++;
+                        for (Map.Entry<String, List<Double>> entry : sensorsThroughTime.entrySet()) {
+                            String sensorName = entry.getKey();
+                            List<Double> avgSpeeds = entry.getValue();
+
+                            // todo: hier while schleife falls sensor am anfang 2 mal nichtt dabei ist oder öhnliches
+                            if(avgSpeeds.size() < windowCount) {
+                                avgSpeeds.add(0.0);
+                                sensorsThroughTime.put(sensorName, avgSpeeds);
+                            }
+                            System.out.println("Review | Sensor: " + entry.getKey() + ", AvgSpeeds: " + entry.getValue());
+                        }
                     }
                 }));
 
@@ -111,6 +126,7 @@ public class Test {
     }
 
     static class CalculateMean extends DoFn<KV<String, Iterable<Double>>, KV<String, Double>> {
+        private final Counter processedElements = Metrics.counter("main", "processed-elements");
         @ProcessElement
         public void processElement(ProcessContext c) {
             double sum = 0;
@@ -119,7 +135,20 @@ public class Test {
                 sum += value;
                 count++;
             }
+            addToSensordata(c.element().getKey(), sum/count);
             c.output(KV.of(c.element().getKey(), sum / count));
+        }
+        public void addToSensordata(String name, Double avgSpeed) {
+
+            // Überprüfen, ob für diesen Sensor bereits Einträge vorhanden sind
+            if (sensorsThroughTime.containsKey(name)) {
+                sensorsThroughTime.get(name).add(avgSpeed);
+            } else {
+                List<Double> averageSpeedList = new ArrayList<>();
+                averageSpeedList.add(avgSpeed);
+                sensorsThroughTime.put(name, averageSpeedList);
+            }
+
         }
     }
 
