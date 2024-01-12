@@ -1,54 +1,37 @@
 package org.example;
 
-import org.example.DataProcessing.Processor;
-import org.example.Kafka.KafkaTopicCreator;
-import org.example.Kafka.Producer;
+import com.espertech.esper.client.EPServiceProvider;
+import com.espertech.esper.client.EPServiceProviderManager;
+import com.espertech.esper.client.EPStatement;
 
-import java.text.ParseException;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-
-import static org.example.TestGenerator.sensorCount;
 
 public class Main {
-    public static String topic = "Measurements" + UUID.randomUUID(); //random topic for testing purposes
-    static int batchSize = 10;
-    static int timeframe = 30000;
 
     public static void main(String[] args) throws InterruptedException {
-        new KafkaTopicCreator().createTopic(topic, 1);
-        Producer producer = new Producer();
-        Processor processor = new Processor();
+        // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
 
-        Thread t = new Thread(() -> {
-            while (true) {
-                try {
-                    processor.consumeData();
-                } catch (ParseException e) {
-                    throw new RuntimeException(e);
-                }
-            }
+        EPServiceProvider engine = EPServiceProviderManager.getDefaultProvider();
+
+        engine.getEPAdministrator().getConfiguration().addEventType(SensorData.class);
+
+        String epl = "select id, speed from SensorData";
+        EPStatement statement = engine.getEPAdministrator().createEPL(epl);
+
+        statement.addListener( (newData, oldData) -> {
+            int id = (int) newData[0].get("id");
+            double speed = (double) newData[0].get("speed");
+            System.out.println(String.format("Id: %d, Speed: %.2f", id, speed));
         });
-        t.start();
-        Thread.sleep(4000);
 
+        engine.getEPRuntime().sendEvent(new SensorData(2, 34));
+
+
+        /*
         while (true) {
-            new TestGenerator().generate(producer, batchSize);
+            String data = TestGenerator.generateTestData();
             Thread.sleep(100);
-            printAvg(processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe));
-            processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
-        }
-    }
+            System.out.println(data);
+        }*/
 
-    public static void printAvg(Map<String, Map<Integer, Double>> avgs) {
-        avgs.forEach((sensor, timeAndSpeeds) -> {
-            if (timeAndSpeeds.isEmpty()) System.out.println("Sensor " + sensor + " has not detected any speed");
-            else {
-                System.out.print("Sensor " + sensor + " | timeframe(s) of length: " + timeframe + "ms | average speeds: ");
-                timeAndSpeeds.forEach((window, speed) -> System.out.printf(Locale.US, "%.2f km/h (window number %d); ", speed, window));
-                System.out.println();
-            }
-        });
     }
 }

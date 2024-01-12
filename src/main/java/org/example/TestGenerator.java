@@ -1,6 +1,5 @@
 package org.example;
 
-import org.example.Kafka.Producer;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -49,9 +48,4 @@ public class TestGenerator {
             return random.nextInt(maxMeasurementCount) + 1;
     }
 
-    public void generate(Producer producer, int batchSize){
-        for (int i = 0; i < batchSize; i++) {
-            producer.sendMessage(generateTestData());
-        }
-    }
 }
