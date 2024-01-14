@@ -1,20 +1,11 @@
 package org.example;
 
-import org.apache.beam.sdk.Pipeline;
-import org.apache.beam.sdk.io.kafka.KafkaIO;
-import org.apache.beam.sdk.transforms.Create;
-import org.apache.beam.sdk.values.PCollection;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.example.Kafka.Producer;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Random;
-
-import static org.apache.beam.model.pipeline.v1.RunnerApi.StandardCoders.Enum.KV;
-import static org.example.Test.topic;
 
 public class TestGenerator {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");

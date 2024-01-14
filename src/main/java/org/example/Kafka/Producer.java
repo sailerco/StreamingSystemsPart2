@@ -5,7 +5,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.util.Properties;
 
-import static org.example.Test.topic;
+import static org.example.Main.topic;
 
 public class Producer {
     static String bootstrapServers = "localhost:29092";
