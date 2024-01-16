@@ -36,7 +36,6 @@ public class Main {
 
         String getSensorData = "select istream id, speed, eventTimestamp from SensorData";
 
-
         EPStatement statement = engine.getEPAdministrator().createEPL(getSensorData);
 
         statement.addListener((newData, oldData) -> {
@@ -45,17 +44,15 @@ public class Main {
             List<Double> speed = (List<Double>) newData[0].get("speed");
             long eventTimestamp = (long) newData[0].get("eventTimestamp");
 
-            Instant instant = Instant.ofEpochMilli(eventTimestamp);
-            LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < speed.size(); i++) {
-                sb.append(String.format(Locale.ENGLISH, "%.1f", speed.get(i))); // Verwenden Sie Locale.ENGLISH, um den Punkt als Dezimaltrennzeichen zu erzwingen
+                sb.append(String.format(Locale.ENGLISH, "%.1f", speed.get(i)));
                 if (i < speed.size() - 1) {
                     sb.append(",");
                 }
             }
-            System.out.println(String.format("Event Timestamp: %s, Id: %d, Speeds: %s", LocalDateTime.ofEpochSecond(eventTimestamp/1000, 0, ZoneOffset.UTC), id, sb.toString() ));
+            System.out.println(String.format("Event Timestamp: %s, Id: %d, Speeds: %s",
+                    LocalDateTime.ofEpochSecond(eventTimestamp/1000, 0, ZoneOffset.UTC), id, sb.toString() ));
         });
 
 
@@ -73,7 +70,7 @@ public class Main {
 
             // https://esper.espertech.com/release-7.0.0/esper-reference/html/configuration.html#config-engine-time-source
             // eigentlich sollte es auch per default gehen, aber ich bekomme den wert nicht abgefragt
-            // todo: 
+            // todo:
             long eventTimestamp = System.currentTimeMillis();
 
             engine.getEPRuntime().sendEvent(new SensorData(currentSensor, speedValues, eventTimestamp));
