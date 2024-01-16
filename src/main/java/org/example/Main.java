@@ -1,63 +1,67 @@
 package org.example;
 
-import com.espertech.esper.client.Configuration;
-import com.espertech.esper.client.EPServiceProvider;
-import com.espertech.esper.client.EPServiceProviderManager;
-import com.espertech.esper.client.EPStatement;
+import com.espertech.esper.common.client.EPCompiled;
+import com.espertech.esper.common.client.configuration.Configuration;
+import com.espertech.esper.compiler.client.CompilerArguments;
+import com.espertech.esper.compiler.client.EPCompileException;
+import com.espertech.esper.compiler.client.EPCompiler;
+import com.espertech.esper.compiler.client.EPCompilerProvider;
+import com.espertech.esper.runtime.client.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 
 public class Main {
     private static int rangeSensor = 5;
-    private static int rangeSpeedMin = -30;
-    private static int rangeSpeedMax = 230;
+    private static int rangeSpeedMin = 50;
+    private static int rangeSpeedMax = 100;
 
     // hohe wahrscheinlichkeit auf null werte
     private static int rangeAmountSensordata = 5;
     private static Random rand = new Random();
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) throws InterruptedException, EPCompileException, EPDeployException {
         // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
 
-        //todo: auf Folie 319 und 320 macht er irgendwie was anderes. Idk meinst ist aus Esper Beispiel
-        // getCommon wird bei mir auch nicht gefunden
+        Configuration configuration = new Configuration();
+        configuration.getCommon().addEventType(SensorData.class);
+        configuration.getCommon().addEventType(FlattenedData.class);
+        EPCompiler compiler = EPCompilerProvider.getCompiler();
 
-        EPServiceProvider engine = EPServiceProviderManager.getDefaultProvider();
+        CompilerArguments arguments = new CompilerArguments(configuration);
+        //String q1 = "select istream id, speed, eventTimestamp from SensorData";
+        String q1 = "@name('RetrieveMeasurements') select id, speed, timestamp from SensorData;";
+        String q2 = "@name('FilterMeasurements') select * from FlattenedData;";
+        EPCompiled epCompiled = compiler.compile(q1 + q2, arguments);
 
-        engine.getEPAdministrator().getConfiguration().addEventType(SensorData.class);
+        EPRuntime runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
+        runtime.initialize();
+        EPDeployment deployment = runtime.getDeploymentService().deploy(epCompiled);
 
-        String getSensorData = "select istream id, speed, eventTimestamp from SensorData";
-
-
-        EPStatement statement = engine.getEPAdministrator().createEPL(getSensorData);
-
-        statement.addListener((newData, oldData) -> {
-
+        EPStatement retrieveStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "RetrieveMeasurements");
+        retrieveStatement.addListener((newData, oldData, statement, runtime1) -> {
+            //retrieve generated Data
             int id = (int) newData[0].get("id");
             List<Double> speed = (List<Double>) newData[0].get("speed");
-            long eventTimestamp = (long) newData[0].get("eventTimestamp");
+            long eventTimestamp = (long) newData[0].get("timestamp");
 
-            Instant instant = Instant.ofEpochMilli(eventTimestamp);
-            LocalDateTime time = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-
-            StringBuilder sb = new StringBuilder();
-            for (int i = 0; i < speed.size(); i++) {
-                sb.append(String.format(Locale.ENGLISH, "%.1f", speed.get(i))); // Verwenden Sie Locale.ENGLISH, um den Punkt als Dezimaltrennzeichen zu erzwingen
-                if (i < speed.size() - 1) {
-                    sb.append(",");
-                }
-            }
-            System.out.println(String.format("Event Timestamp: %s, Id: %d, Speeds: %s", LocalDateTime.ofEpochSecond(eventTimestamp/1000, 0, ZoneOffset.UTC), id, sb.toString() ));
+            //flatten Data -> maybe helpful for later use
+            List<FlattenedData> flattenedData = new ArrayList<>();
+            speed.forEach(s -> flattenedData.add(new FlattenedData(id, s, eventTimestamp)));
+            flattenedData.forEach(data -> System.out.println(data.getId() + " " + Instant.ofEpochMilli(data.getTimestamp()) + " " + data.getSpeed()));
+            flattenedData.forEach(data -> runtime1.getEventService().sendEventBean(data, "FlattenedData"));
         });
 
+        EPStatement filterStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "FilterMeasurements");
+        retrieveStatement.addListener((newData, oldData, statement, runtime2) -> {
+            int id = (int) newData[0].get("id");
+            List<Double> speed = (List<Double>) newData[0].get("speed");
+            long eventTimestamp = (long) newData[0].get("timestamp");
+            //TODO: Filter out empty and negative Values
+        });
 
         while (true) {
             Thread.sleep(300);
@@ -67,16 +71,16 @@ public class Main {
             List<Double> speedValues = new ArrayList<>();
 
             for (int i = 0; i < numSpeedValues; i++) {
-                double currentSpeed = (double) (rand.nextInt((rangeSpeedMax-rangeSpeedMin) + 1) + rangeSpeedMin);
+                double currentSpeed = (double) (rand.nextInt((rangeSpeedMax - rangeSpeedMin) + 1) + rangeSpeedMin);
                 speedValues.add(currentSpeed);
             }
 
             // https://esper.espertech.com/release-7.0.0/esper-reference/html/configuration.html#config-engine-time-source
             // eigentlich sollte es auch per default gehen, aber ich bekomme den wert nicht abgefragt
             // todo: 
-            long eventTimestamp = System.currentTimeMillis();
+            long timestamp = System.currentTimeMillis();
 
-            engine.getEPRuntime().sendEvent(new SensorData(currentSensor, speedValues, eventTimestamp));
+            runtime.getEventService().sendEventBean(new SensorData(currentSensor, speedValues, timestamp), "SensorData");
         }
 
     }

@@ -5,12 +5,12 @@ import java.util.List;
 public class SensorData {
     private int id;
     private List<Double> speed;
-    private long eventTimestamp; // Neues Attribut für den Zeitstempel des Ereignisses
+    private long timestamp; // Neues Attribut für den Zeitstempel des Ereignisses
 
-    public SensorData(int id, List<Double> speed, long eventTimestamp) {
+    public SensorData(int id, List<Double> speed, long timestamp) {
         this.id = id;
         this.speed = speed;
-        this.eventTimestamp = eventTimestamp;
+        this.timestamp = timestamp;
     }
 
     public int getId() {
@@ -21,8 +21,8 @@ public class SensorData {
         return speed;
     }
 
-    public long getEventTimestamp() {
-        return eventTimestamp;
+    public long getTimestamp() {
+        return timestamp;
     }
 }
 
