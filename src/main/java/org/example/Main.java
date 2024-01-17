@@ -21,6 +21,7 @@ public class Main {
     private static int rangeAmountSensordata = 5;
     private static Random rand = new Random();
     private static String seq = "1, 2, 3";
+    private static double thresholdJam = 10;
 
     public static void main(String[] args) throws InterruptedException, EPCompileException, EPDeployException {
         // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
@@ -28,15 +29,18 @@ public class Main {
         Configuration configuration = new Configuration();
         configuration.getCommon().addEventType(SensorData.class);
         configuration.getCommon().addEventType(FlattenedData.class);
+        configuration.getCommon().addEventType(AggregatedData.class);
+        configuration.getCommon().addEventType(TrafficJam.class);
         EPCompiler compiler = EPCompilerProvider.getCompiler();
 
         CompilerArguments arguments = new CompilerArguments(configuration);
-        //String q1 = "select istream id, speed, eventTimestamp from SensorData";
         String q1 = "@name('RetrieveMeasurements') select id, speed, timestamp from SensorData;";
-        String q2 = "@Name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#time_batch(5 sec) group by id;";
-        String q3 = "@Name('AvgOverall') select avg(speed) as overallAverageSpeed from FlattenedData#time_batch(5 sec) where id in (" + seq + ")";
-
-        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3, arguments);
+        String q2 = "@Name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
+        String q3 = "@Name('AvgOverall') select avg(speed) as overallAverageSpeed " +
+                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) where id in (" + seq + ");";
+        String q4 = "@Name('AggregateData') insert into AggregatedData select id, avg(speed) as averageSpeed, timestamp " +
+                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
+        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4, arguments);
 
         EPRuntime runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         runtime.initialize();
@@ -83,6 +87,11 @@ public class Main {
                 double averageSpeed = (double) newData[0].get("overallAverageSpeed");
                 System.out.println("Average speed over sequence is " + String.format(Locale.US, "%.2f km/h", averageSpeed));
             }
+        });
+
+        EPStatement aggStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AggregateData");
+        aggStatement.addListener((newData, oldData, statement, runtime4) -> {
+            runtime4.getEventService().sendEventBean(newData, "AggregatedData");
         });
 
         while (true) {
