@@ -2,6 +2,7 @@ package org.example;
 
 public class AggregatedData {
     private final int id;
+    //todo: Auch hier speed umbennen in avgSpeed
     private final Double speed;
     private final long timestamp;
 

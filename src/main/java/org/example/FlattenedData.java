@@ -2,6 +2,7 @@ package org.example;
 
 public class FlattenedData {
 
+    // todo: gerne hier umbennenen, speed in avg speed
     private final int id;
     private final Double speed;
     private final long timestamp; // Neues Attribut für den Zeitstempel des Ereignisses

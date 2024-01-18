@@ -35,12 +35,17 @@ public class Main {
 
         CompilerArguments arguments = new CompilerArguments(configuration);
         String q1 = "@name('RetrieveMeasurements') select id, speed, timestamp from SensorData;";
-        String q2 = "@Name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
-        String q3 = "@Name('AvgOverall') select avg(speed) as overallAverageSpeed " +
+        String q2 = "@name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
+        String q3 = "@name('AvgOverall') select avg(speed) as overallAverageSpeed " +
                 "from FlattenedData#ext_timed_batch(timestamp, 5 sec) where id in (" + seq + ");";
-        String q4 = "@Name('AggregateData') insert into AggregatedData select id, avg(speed) as averageSpeed, timestamp " +
+        String q4 = "@name('AggregateData') insert into AggregatedData select id, avg(speed) as averageSpeed, timestamp " +
                 "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
-        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4, arguments);
+        String q5 = "@name('CheckForTrafficJam') select speed, timestamp, id " +
+                "from AggregatedData#ext_timed_batch(timestamp, 10 sec) group by id";
+        //String q5 = "select * from pattern [every (a=AggregatedData -> b=AggregatedData(id=a.id and speed<=0.5*a.speed))]";
+
+
+        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4 + q5 , arguments);
 
         EPRuntime runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         runtime.initialize();
@@ -56,8 +61,10 @@ public class Main {
             //Filter the negative out
             speed.removeIf(value -> value <= 0.0);
             speed.removeIf(Objects::isNull);
+
             //convert to km/h
             speed.replaceAll(s -> s * 3.6);
+
             if (!speed.isEmpty()) {
                 System.out.println(timestamp + " " + id + " " + speed);
                 //flatten Data
@@ -91,8 +98,25 @@ public class Main {
 
         EPStatement aggStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AggregateData");
         aggStatement.addListener((newData, oldData, statement, runtime4) -> {
-            runtime4.getEventService().sendEventBean(newData, "AggregatedData");
+            // cast wichtig damit es funktioniert
+            // todo: Ist hier wirklich die richtige Stelle um Event zu senden? Habe extrem viele
+            // er sendet hier ca. 30 events jedes mal mit (siehe debugg) sollte es aber nicht nur eins pro Sensor sein?
+            AggregatedData aggregatedData = (AggregatedData)newData[0].getUnderlying();
+            runtime4.getEventService().sendEventBean(aggregatedData, "AggregatedData");
         });
+
+        // Traffic Jam
+        EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
+        checkTrafficJam.addListener(((newData, oldData, statement, runtime5) -> {
+            System.out.println("TEST: Traffic Jam");
+            // er kommt hier ca. 57 werte how? woher
+            // würde maximal 4 pro Sensor erwarten
+/*
+            double avgSpeed = (double) newData[0].get("speed");
+            long time = (long)newData[0].get("timestamp");
+            int id = (int) newData[0].get("id");*/
+
+        }));
 
         while (true) {
             Thread.sleep(300);

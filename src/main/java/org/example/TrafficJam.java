@@ -1,15 +1,22 @@
 package org.example;
 
 public class TrafficJam {
-    double minSpeed;
-    double maxSpeed;
-    double speedReduction;
-    int id;
 
-    public TrafficJam(double minSpeed, double maxSpeed, double speedReduction, int id) {
-        this.minSpeed = minSpeed;
-        this.maxSpeed = maxSpeed;
-        this.speedReduction = speedReduction;
-        this.id = id;
+    double avgSpeed;
+
+    double timestamp;
+
+
+    public TrafficJam(double avgSpeed, double timestamp) {
+        this.avgSpeed = avgSpeed;
+        this.timestamp = timestamp;
+    }
+
+    public double getAvgSpeed() {
+        return avgSpeed;
+    }
+
+    public double getTimestamp() {
+        return timestamp;
     }
 }
