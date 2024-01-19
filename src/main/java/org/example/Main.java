@@ -16,12 +16,9 @@ public class Main {
     private static int rangeSensor = 5;
     private static int minSpeed = 10;
     private static int maxSpeed = 30;
-
-    // hohe wahrscheinlichkeit auf null werte
     private static int rangeAmountSensordata = 5;
     private static Random rand = new Random();
     private static String seq = "1, 2, 3";
-    private static double thresholdJam = 10;
 
     public static void main(String[] args) throws InterruptedException, EPCompileException, EPDeployException {
         // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
@@ -40,9 +37,8 @@ public class Main {
                 "from FlattenedData#ext_timed_batch(timestamp, 5 sec) where id in (" + seq + ");";
         String q4 = "insert into AggregatedData select id as id, avg(speed) as speed, min(timestamp) as firstTimestamp, max(timestamp) as lastTimestamp " +
                 "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id having count(speed) > 0;";
-        String q5 = "@name('CheckForTrafficJam') select * from AggregatedData#ext_timed_batch(firstTimestamp, 10 sec) group by id";
-        //String q5 = "select * from pattern [every (a=AggregatedData -> b=AggregatedData(id=a.id and speed<=0.5*a.speed))]";
-
+        String q5 = "@name('CheckForTrafficJam') select id, min(speed) as minSpeed, max(speed) as maxSpeed, min(firstTimestamp) as firstTimestamp, max(lastTimestamp) as lastTimestamp " +
+                "from AggregatedData#ext_timed_batch(firstTimestamp, 10 sec) group by id having min(speed) < max(speed) * 0.8";
 
         EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4 + q5, arguments);
 
@@ -51,40 +47,11 @@ public class Main {
         EPDeployment deployment = runtime.getDeploymentService().deploy(epCompiled);
 
         EPStatement retrieveStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "RetrieveMeasurements");
-        retrieveStatement.addListener((newData, oldData, statement, runtime1) -> {
-            //retrieve generated Data
-            int id = (int) newData[0].get("id");
-            List<Double> speed = (List<Double>) newData[0].get("speed");
-            long timestamp = (long) newData[0].get("timestamp");
-
-            //Filter the negative out
-            speed.removeIf(value -> value <= 0.0);
-            speed.removeIf(Objects::isNull);
-
-            //convert to km/h
-            speed.replaceAll(s -> s * 3.6);
-
-            if (!speed.isEmpty()) {
-                System.out.println(timestamp + " " + id + " " + speed);
-                //flatten Data
-                List<FlattenedData> flattenedData = new ArrayList<>();
-                speed.forEach(s -> flattenedData.add(new FlattenedData(id, s, timestamp)));
-                flattenedData.forEach(data -> runtime1.getEventService().sendEventBean(data, "FlattenedData"));
-            }
-        });
+        retrieveStatement.addListener(new Listener.SensorEventListener());
 
         //prints avg for each sensor
         EPStatement avgStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgByKey");
-        avgStatement.addListener((newData, oldData, statement, runtime2) -> {
-            for (EventBean eventBean : newData) {
-                int id = (int) eventBean.get("id");
-                if (eventBean.get("averageSpeed") != null) {
-                    double averageSpeed = (double) eventBean.get("averageSpeed");
-                    System.out.println("Average speed for ID " + id + " is " + String.format(Locale.US, "%.2f km/h", averageSpeed));
-                } else
-                    System.out.println("There were no measurements for " + id + " in this window");
-            }
-        });
+        avgStatement.addListener(new Listener.AvgEventListener());
 
         //prints avg for sensor sequence
         EPStatement avgSeqStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgOverall");
@@ -97,18 +64,7 @@ public class Main {
 
         // Traffic Jam
         EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
-        checkTrafficJam.addListener(((newData, oldData, statement, runtime4) -> {
-            System.out.println("TEST: Traffic Jam");
-            for (EventBean eventBean : newData) {
-                int id = (int) eventBean.get("id");
-                long first = (long) eventBean.get("firstTimestamp");
-                long last = (long) eventBean.get("lastTimestamp");
-                if (eventBean.get("speed") != null) {
-                    double averageSpeed = (double) eventBean.get("speed");
-                    System.out.println("Traffic Jam" + id + " " + first + " -> " + last + " " + averageSpeed);
-                }
-            }
-        }));
+        checkTrafficJam.addListener(new Listener.TrafficEventListener());
 
         while (true) {
             Thread.sleep(300);
@@ -134,4 +90,5 @@ public class Main {
         }
 
     }
+
 }
