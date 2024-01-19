@@ -38,14 +38,13 @@ public class Main {
         String q2 = "@name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
         String q3 = "@name('AvgOverall') select avg(speed) as overallAverageSpeed " +
                 "from FlattenedData#ext_timed_batch(timestamp, 5 sec) where id in (" + seq + ");";
-        String q4 = "@name('AggregateData') insert into AggregatedData select id, avg(speed) as averageSpeed, timestamp " +
-                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
-        String q5 = "@name('CheckForTrafficJam') select speed, timestamp, id " +
-                "from AggregatedData#ext_timed_batch(timestamp, 10 sec) group by id";
+        String q4 = "insert into AggregatedData select id as id, avg(speed) as speed, min(timestamp) as firstTimestamp, max(timestamp) as lastTimestamp " +
+                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id having count(speed) > 0;";
+        String q5 = "@name('CheckForTrafficJam') select * from AggregatedData#ext_timed_batch(firstTimestamp, 10 sec) group by id";
         //String q5 = "select * from pattern [every (a=AggregatedData -> b=AggregatedData(id=a.id and speed<=0.5*a.speed))]";
 
 
-        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4 + q5 , arguments);
+        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4 + q5, arguments);
 
         EPRuntime runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         runtime.initialize();
@@ -96,26 +95,19 @@ public class Main {
             }
         });
 
-        EPStatement aggStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AggregateData");
-        aggStatement.addListener((newData, oldData, statement, runtime4) -> {
-            // cast wichtig damit es funktioniert
-            // todo: Ist hier wirklich die richtige Stelle um Event zu senden? Habe extrem viele
-            // er sendet hier ca. 30 events jedes mal mit (siehe debugg) sollte es aber nicht nur eins pro Sensor sein?
-            AggregatedData aggregatedData = (AggregatedData)newData[0].getUnderlying();
-            runtime4.getEventService().sendEventBean(aggregatedData, "AggregatedData");
-        });
-
         // Traffic Jam
         EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
-        checkTrafficJam.addListener(((newData, oldData, statement, runtime5) -> {
+        checkTrafficJam.addListener(((newData, oldData, statement, runtime4) -> {
             System.out.println("TEST: Traffic Jam");
-            // er kommt hier ca. 57 werte how? woher
-            // würde maximal 4 pro Sensor erwarten
-/*
-            double avgSpeed = (double) newData[0].get("speed");
-            long time = (long)newData[0].get("timestamp");
-            int id = (int) newData[0].get("id");*/
-
+            for (EventBean eventBean : newData) {
+                int id = (int) eventBean.get("id");
+                long first = (long) eventBean.get("firstTimestamp");
+                long last = (long) eventBean.get("lastTimestamp");
+                if (eventBean.get("speed") != null) {
+                    double averageSpeed = (double) eventBean.get("speed");
+                    System.out.println("Traffic Jam" + id + " " + first + " -> " + last + " " + averageSpeed);
+                }
+            }
         }));
 
         while (true) {
@@ -136,7 +128,6 @@ public class Main {
 
             // https://esper.espertech.com/release-7.0.0/esper-reference/html/configuration.html#config-engine-time-source
             // eigentlich sollte es auch per default gehen, aber ich bekomme den wert nicht abgefragt
-            // todo: 
             long timestamp = System.currentTimeMillis();
 
             runtime.getEventService().sendEventBean(new SensorData(currentSensor, speedValues, timestamp), "SensorData");

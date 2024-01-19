@@ -4,12 +4,14 @@ public class AggregatedData {
     private final int id;
     //todo: Auch hier speed umbennen in avgSpeed
     private final Double speed;
-    private final long timestamp;
+    private long firstTimestamp;
+    private long lastTimestamp;
 
-    public AggregatedData(int id, Double speed, long timestamp) {
+    public AggregatedData(int id, Double speed, long firstTimestamp, long lastTimestamp) {
         this.id = id;
         this.speed = speed;
-        this.timestamp = timestamp;
+        this.firstTimestamp = firstTimestamp;
+        this.lastTimestamp = lastTimestamp;
     }
 
     public int getId() {
@@ -20,7 +22,11 @@ public class AggregatedData {
         return speed;
     }
 
-    public long getTimestamp() {
-        return timestamp;
+    public long getFirstTimestamp() {
+        return firstTimestamp;
+    }
+
+    public long getLastTimestamp() {
+        return lastTimestamp;
     }
 }
