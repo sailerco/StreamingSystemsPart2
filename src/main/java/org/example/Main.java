@@ -55,12 +55,7 @@ public class Main {
 
         //prints avg for sensor sequence
         EPStatement avgSeqStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgOverall");
-        avgSeqStatement.addListener((newData, oldData, statement, runtime3) -> {
-            if (newData != null && newData.length > 0) {
-                double averageSpeed = (double) newData[0].get("overallAverageSpeed");
-                System.out.println("Average speed over sequence is " + String.format(Locale.US, "%.2f km/h", averageSpeed));
-            }
-        });
+        avgSeqStatement.addListener(new Listener.SeqAvg());
 
         // Traffic Jam
         EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
