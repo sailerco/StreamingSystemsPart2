@@ -8,7 +8,6 @@ public class AggregatedData {
 
     public AggregatedData(int id, Double speed, long firstTimestamp, long lastTimestamp) {
         this.id = id;
-        //avg
         this.speed = speed;
         this.firstTimestamp = firstTimestamp;
         this.lastTimestamp = lastTimestamp;
