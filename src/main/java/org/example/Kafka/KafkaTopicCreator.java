@@ -3,7 +3,6 @@ package org.example.Kafka;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.NewTopic;
-import org.example.TestGenerator;
 
 import java.util.Collections;
 import java.util.Properties;
@@ -16,11 +15,9 @@ public class KafkaTopicCreator {
         Properties config = new Properties();
         config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, server);
         try (AdminClient adminClient = AdminClient.create(config)) {
-            // Create a new topic with one partition
             NewTopic newTopic = new NewTopic(topicName, numPartitions, (short) 1);
             adminClient.createTopics(Collections.singleton(newTopic)).all().get();
             System.out.println("Topic " + topicName + " created successfully with " + numPartitions + " partition.");
-
         } catch (InterruptedException | ExecutionException e) {
             System.err.println("Error creating topic: " + e.getMessage());
         }

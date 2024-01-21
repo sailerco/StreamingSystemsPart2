@@ -33,10 +33,8 @@ public class Main {
         t.start();
         Thread.sleep(4000);
 
-        //while (true) {
-        for (int i = 0; i < 1; i++) {
+        while (true) {
             new TestGenerator().generate(producer, batchSize);
-            //new TestGenerator().test(producer);
             Thread.sleep(100);
             printAvg(processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe));
             processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
