@@ -1,34 +1,65 @@
 package org.example;
 
-import com.espertech.esper.common.client.EventBean;
-import com.espertech.esper.runtime.client.EPRuntime;
-import org.junit.jupiter.api.BeforeEach;
+import com.espertech.esper.common.client.EPCompiled;
+import com.espertech.esper.common.client.configuration.Configuration;
+import com.espertech.esper.common.client.scopetest.EPAssertionUtil;
+import com.espertech.esper.compiler.client.CompilerArguments;
+import com.espertech.esper.compiler.client.EPCompileException;
+import com.espertech.esper.compiler.client.EPCompilerProvider;
+import com.espertech.esper.runtime.client.*;
+import com.espertech.esper.runtime.client.scopetest.SupportUpdateListener;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import static org.mockito.Mockito.*;
+import static com.espertech.esper.common.client.scopetest.ScopeTestHelper.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 class ListenerTest {
-    EPRuntime runtime;
-    @BeforeEach
-    void setUp() {
-        runtime = mock(EPRuntime.class);
+    static Configuration configuration;
+    static CompilerArguments compilerArguments;
+    static EPRuntime runtime;
+    @BeforeAll
+    public static void setup(){
+        configuration = new Configuration();
+        configuration.getCommon().addEventType(SensorData.class);
+        configuration.getCommon().addEventType(FlattenedData.class);
+        compilerArguments = new CompilerArguments(configuration);
+        runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
+    }
+    public SupportUpdateListener setStatement(String statement) throws EPDeployException, EPCompileException {
+        EPCompiled compiled = EPCompilerProvider.getCompiler().compile(statement, compilerArguments);
+        EPStatement stmt = runtime.getDeploymentService().deploy(compiled).getStatements()[0];
+        SupportUpdateListener listener = new SupportUpdateListener();
+        stmt.addListener(listener);
+        return listener;
+    }
+    @Test
+    public void testInputHandling() throws EPCompileException, EPDeployException {
+        String query = "select id, speed, timestamp from SensorData;";
+        SupportUpdateListener listener = setStatement(query);
+        long currentTime = System.currentTimeMillis();
+        SensorData testEvent = new SensorData(1, Arrays.asList(20.0, 23.5, 18.0), currentTime);
+        runtime.getEventService().sendEventBean(testEvent, "SensorData");
+        EPAssertionUtil.assertProps(listener.assertOneGetNew(), "id,speed,timestamp".split(","),
+                new Object[]{1, Arrays.asList(20.0, 23.5, 18.0), currentTime});
     }
 
     @Test
-    public void testSendEvent(){
-        Listener.SensorEventListener sensorEventListener = new Listener.SensorEventListener();
-        SensorData sensorData = new SensorData(1, List.of(-15.0, 20.0, 25.0), System.currentTimeMillis());
-        EventBean eventBean = mock(EventBean.class);
-        when(eventBean.get("id")).thenReturn(1);
-        when(eventBean.get("speed")).thenReturn(new ArrayList<>(List.of(-15.0, 20.0, 25.0)));
-        when(eventBean.get("timestamp")).thenReturn(System.currentTimeMillis());
-        // when
-        sensorEventListener.update(new EventBean[]{eventBean}, null, null, runtime);
+    public void testAvgByKey() throws EPDeployException, EPCompileException {
+        String query = "select id, avg(speed) as averageSpeed from FlattenedData group by id;";
+        SupportUpdateListener listener = setStatement(query);
+        int id = 1;
+        List<Double> speed = Arrays.asList(20.0, 23.5, 18.0);
+        long timestamp = System.currentTimeMillis();
+        List<FlattenedData> flattenedData = new ArrayList<>();
+        speed.forEach(s -> flattenedData.add(new FlattenedData(id, s, timestamp)));
+        flattenedData.forEach(data -> runtime.getEventService().sendEventBean(data, "FlattenedData"));
+        EPAssertionUtil.assertProps(listener.getAndResetDataListsFlattened(), "id,speed".split(","), new Object[]{1, 20.5});
 
-        // then
-        verify(runtime, times(1)).getEventService().sendEventBean(any(FlattenedData.class), eq("FlattenedData"));
     }
+
 }
