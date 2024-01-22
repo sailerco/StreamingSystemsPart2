@@ -20,7 +20,9 @@ dependencies {
     implementation("org.apache.beam:beam-sdks-java-core:2.52.0")
     implementation("org.apache.kafka:kafka-clients:3.6.1")
     implementation("ch.qos.logback:logback-classic:1.4.14")
+    testImplementation("org.hamcrest:hamcrest-all:1.3")
     testImplementation("org.mockito:mockito-core:5.8.0")
+    testImplementation("junit:junit:4.13.1")
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
 }
