@@ -69,7 +69,7 @@ class MainTest {
         PAssert.that(output).containsInAnyOrder(
                 KV.of("3", 26.69),
                 KV.of("2", (26.65 + 27.87)/2),
-                KV.of("1", 23.515));
+                KV.of("1", (24.12 + 22.91)/2));
         p.run();
     }
 }

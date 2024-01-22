@@ -65,7 +65,7 @@ public class Main {
                 .apply("ConvertM/SToKM/H", ParDo.of(new ConvertToKMH()));
 
         PCollection<KV<String, Double>> avg = cleanedData
-                .apply("Windowing", Window.<KV<String, ArrayList<Double>>>into(FixedWindows.of(Duration.standardSeconds(5))).triggering(DefaultTrigger.of()))
+                .apply("Windowing", Window.<KV<String, ArrayList<Double>>>into(FixedWindows.of(Duration.standardSeconds(10))).triggering(DefaultTrigger.of()))
                 .apply("FlattensArray", ParDo.of(new Flat()))
                 .apply(Mean.perKey())
                 .apply(ParDo.of(new AddToSensorData()));
@@ -74,9 +74,11 @@ public class Main {
 
         avg.apply("Filter Sensor-Set", Filter.by((SerializableFunction<KV<String, Double>, Boolean>) input -> sensorList.contains(input.getKey())))
                 .apply(Values.create())
-                .apply("Mean Sensor-Set", Mean.<Double>globally().withoutDefaults()) //TODO: Mean.globally or MeanOfSum? Das eine würde alle vorhanden nutzen das andere durch die Sequence Länge teilen
+                .apply("Sum of Sensors", Sum.doublesGlobally().withoutDefaults())
+                .apply("Mean Value", ParDo.of(new MeanOfSum()))
                 .apply("Print Mean Sensor-Set", ParDo.of(new PrintAvgOfSequence()))
                 .apply("Print all avg for sensor", ParDo.of(new PrintMap()));
+
 
         p.run().waitUntilFinish();
     }
@@ -94,7 +96,7 @@ public class Main {
                     sensorsThroughTime.put(sensorName, avgSpeeds);
                 }
                 System.out.println("Review | Sensor: " + entry.getKey() + " | AvgSpeeds: "
-                        + entry.getValue().stream().map(speed -> String.format(Locale.US, "%.2f km/h", speed))
+                        + entry.getValue().stream().map(speed -> String.format(Locale.US, "%.3f km/h", speed))
                         .collect(Collectors.joining(", ")));
             }
         }
@@ -110,14 +112,14 @@ public class Main {
     static class PrintAvg extends DoFn<KV<String, Double>, KV<String, Double>> {
         @ProcessElement
         public void processElement(ProcessContext c) {
-            System.out.println(c.element().getKey() + " has an avg speed of: " + String.format(Locale.US, "%.2fkm/h", c.element().getValue()));
+            System.out.println(c.element().getKey() + " has an avg speed of: " + String.format(Locale.US, "%.3fkm/h", c.element().getValue()));
         }
     }
 
     static class PrintAvgOfSequence extends DoFn<Double, Double> {
         @ProcessElement
         public void processElement(ProcessContext c) {
-            System.out.println("Avg over the current time window and given sequence " + String.format(Locale.US, "%.2fkm/h", c.element()));
+            System.out.println("Avg over the current time window and given sequence " + String.format(Locale.US, "%.3fkm/h", c.element()));
             c.output(c.element());
         }
     }
