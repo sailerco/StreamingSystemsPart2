@@ -55,7 +55,7 @@ public class Main {
 
         //prints avg for sensor sequence
         EPStatement avgSeqStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgOverall");
-        avgSeqStatement.addListener(new Listener.SeqAvg());
+        avgSeqStatement.addListener(new Listener.SeqAvgListener());
 
         // Traffic Jam
         EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
