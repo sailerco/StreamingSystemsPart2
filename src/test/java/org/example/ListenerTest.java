@@ -15,9 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static com.espertech.esper.common.client.scopetest.ScopeTestHelper.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
 class ListenerTest {
     static Configuration configuration;
     static CompilerArguments compilerArguments;
@@ -44,8 +41,7 @@ class ListenerTest {
         long currentTime = System.currentTimeMillis();
         SensorData testEvent = new SensorData(1, Arrays.asList(20.0, 23.5, 18.0), currentTime);
         runtime.getEventService().sendEventBean(testEvent, "SensorData");
-        EPAssertionUtil.assertProps(listener.assertOneGetNew(), "id,speed,timestamp".split(","),
-                new Object[]{1, Arrays.asList(20.0, 23.5, 18.0), currentTime});
+        EPAssertionUtil.assertProps(listener.assertOneGetNew(), "id,speed,timestamp".split(","), new Object[]{1, Arrays.asList(20.0, 23.5, 18.0), currentTime});
     }
 
     @Test
@@ -58,8 +54,6 @@ class ListenerTest {
         List<FlattenedData> flattenedData = new ArrayList<>();
         speed.forEach(s -> flattenedData.add(new FlattenedData(id, s, timestamp)));
         flattenedData.forEach(data -> runtime.getEventService().sendEventBean(data, "FlattenedData"));
-        EPAssertionUtil.assertProps(listener.getAndResetDataListsFlattened(), "id,speed".split(","), new Object[]{1, 20.5});
-
+        EPAssertionUtil.assertProps(listener.getLastNewData()[0], "id,averageSpeed".split(","), new Object[]{1, 20.5});
     }
-
 }
