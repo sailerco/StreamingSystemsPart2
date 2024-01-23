@@ -90,9 +90,11 @@ public class Main {
             for (Map.Entry<String, List<Double>> entry : sensorsThroughTime.entrySet()) {
                 String sensorName = entry.getKey();
                 List<Double> avgSpeeds = entry.getValue();
-                // todo: hier while schleife falls sensor am anfang 2 mal nicht dabei ist oder öhnliches
-                if (avgSpeeds.size() < windowCount) {
-                    avgSpeeds.add(0.0);
+                // an vorletzter Stelle einfügen
+                int indexToInsert = avgSpeeds.size() - 1;
+                // fülle mit null auf falls Sensor keinen Wert hatte in einem Zeitfenster und daher auch kein avg (avg = 0)
+                while(avgSpeeds.size() < windowCount) {
+                    avgSpeeds.add(indexToInsert, 0.0);
                     sensorsThroughTime.put(sensorName, avgSpeeds);
                 }
                 System.out.println("Review | Sensor: " + entry.getKey() + " | AvgSpeeds: "
