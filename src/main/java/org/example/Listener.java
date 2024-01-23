@@ -50,7 +50,7 @@ public class Listener {
         }
     }
 
-    static class SeqAvg implements UpdateListener {
+    static class SeqAvgListener implements UpdateListener {
         @Override
         public void update(EventBean[] newData, EventBean[] oldData, EPStatement statement, EPRuntime runtime) {
             for (EventBean eventBean : newData) {
