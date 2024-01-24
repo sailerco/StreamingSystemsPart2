@@ -50,29 +50,38 @@ public class Processor {
     }
 
     //computes the avg speed over the given sensor seq and at a specific timeframe number (Aufgabe 2)
-    //TODO: was will er? Das mit Zeitpunkt macht kein Sinn
-    public double calculatesAvgSpeedInSection(String[] sensorSeq, int timeframeNumber, int timeframe) {
-        ArrayList<Double> avgSpeeds = new ArrayList<>();
+    public void displaySequence(String[] sensorSeq, int timeframeNumber, int timeframe) {
+        StringBuilder builder = new StringBuilder("Sensor Sequence " + Arrays.toString(sensorSeq) + " | in given window number " + timeframeNumber + " | ");
         for (String id : sensorSeq) {
-            if (avgOfProcessedData.get(id) != null && avgOfProcessedData.get(id).get(timeframeNumber) != null)
-                avgSpeeds.add(avgOfProcessedData.get(id).get(timeframeNumber));
+            if (avgOfProcessedData.get(id) != null && avgOfProcessedData.get(id).get(timeframeNumber) != null) {
+                double speed = avgOfProcessedData.get(id).get(timeframeNumber);
+                builder.append("Sensor ").append(id).append(": ").append(String.format(Locale.US, "%.2f km/h", speed)).append("; ");
+            }
         }
-        double res = calculateAvgInKMH(avgSpeeds, false);
-        System.out.println("In the " + timeframeNumber + "# time-window there was a avg speed of "
-                + String.format(Locale.US, "%.2f", res) + "km/h over the sensor sequence " + Arrays.toString(sensorSeq));
+        System.out.println(builder);
         Pair<Date> window = getTimeframeRange(timeframeNumber, timeframe);
         System.out.println("--> Time window was between " + window.first() + " and " + window.second());
-        return res;
     }
 
+    //display the average per key in each time windows
+    public void displayAvg(int timeframe) {
+        avgOfProcessedData.forEach((sensor, timeAndSpeeds) -> {
+            if (timeAndSpeeds.isEmpty()) System.out.println("Sensor " + sensor + " has not detected any speed");
+            else {
+                System.out.print("Sensor " + sensor + " | timeframe(s) of length: " + timeframe + "ms | average speeds: ");
+                timeAndSpeeds.forEach((window, speed) -> System.out.printf(Locale.US, "%.2f km/h (window number %d); ", speed, window));
+                System.out.println();
+            }
+        });
+    }
 
     //calculates for a given Map the avg speed in a given timeframe and also retrieves timeframe number. Works recursive
     private Map<Integer, Double> calculateInTimeframe(Map<Long, ArrayList<Double>> speedsAtTime, Map<Integer, Double> timeFrameSpeedsMap, int timeFrame) {
         Map<Long, ArrayList<Double>> copy = new LinkedHashMap<>();
         ArrayList<Double> speedsInFrame = new ArrayList<>();
-        long startTime = getTime(speedsAtTime.entrySet().iterator().next().getKey(), timeFrame); //TODO: was wenn die Zeit erst nach dem neuen Zeitfenster ist?
+        long startTime = getTime(speedsAtTime.entrySet().iterator().next().getKey(), timeFrame);
 
-        //fügen alle Zeiten vom Zeitfenster in ein Array, rausfallende zwischenspeichern in copy map
+        //all values that fall into time window will be saved and the ones that fall out will be saved in the copy map
         for (Map.Entry<Long, ArrayList<Double>> entry : speedsAtTime.entrySet()) {
             long currentTime = entry.getKey();
             if (currentTime - startTime < timeFrame) speedsInFrame.addAll(entry.getValue());
@@ -115,7 +124,7 @@ public class Processor {
         else return -1;
     }
 
-    private long getTime(long time, int timeframe){
+    private long getTime(long time, int timeframe) {
         int n = getTimeframeNumber(time, timeframe);
         long first = results.getFirst().timestamp.getTime();
         return first + ((long) timeframe * n);
