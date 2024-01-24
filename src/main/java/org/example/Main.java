@@ -1,7 +1,6 @@
 package org.example;
 
 import com.espertech.esper.common.client.EPCompiled;
-import com.espertech.esper.common.client.EventBean;
 import com.espertech.esper.common.client.configuration.Configuration;
 import com.espertech.esper.compiler.client.CompilerArguments;
 import com.espertech.esper.compiler.client.EPCompileException;
@@ -18,7 +17,7 @@ public class Main {
     private static int maxSpeed = 30;
     private static int rangeAmountSensordata = 5;
     private static Random rand = new Random();
-    private static String seq = "1, 2, 3";
+    static String seq = "1, 2, 3";
 
     public static void main(String[] args) throws InterruptedException, EPCompileException, EPDeployException {
         // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
@@ -33,14 +32,12 @@ public class Main {
         CompilerArguments arguments = new CompilerArguments(configuration);
         String q1 = "@name('RetrieveMeasurements') select id, speed, timestamp from SensorData;";
         String q2 = "@name('AvgByKey') select id, avg(speed) as averageSpeed from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id;";
-        String q3 = "@name('AvgOverall') select avg(speed) as overallAverageSpeed " +
-                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) where id in (" + seq + ");";
-        String q4 = "insert into AggregatedData select id as id, avg(speed) as speed, min(timestamp) as firstTimestamp, max(timestamp) as lastTimestamp " +
-                "from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id having count(speed) > 0;";
-        String q5 = "@name('CheckForTrafficJam') select id, min(speed) as minSpeed, max(speed) as maxSpeed, min(firstTimestamp) as firstTimestamp, max(lastTimestamp) as lastTimestamp " +
+        String q4 = "insert into AggregatedData select id as id, avg(speed) as speed, min(timestamp) as firstTimestamp, max(timestamp) as lastTimestamp from FlattenedData#ext_timed_batch(timestamp, 5 sec) group by id having count(speed) > 0;";
+        String q5 = "@name('SensorSequence') select id, speed from AggregatedData where id in ("+seq+");";
+        String q6 = "@name('CheckForTrafficJam') select id, min(speed) as minSpeed, max(speed) as maxSpeed, min(firstTimestamp) as firstTimestamp, max(lastTimestamp) as lastTimestamp " +
                 "from AggregatedData#ext_timed_batch(firstTimestamp, 10 sec) group by id having min(speed) < max(speed) * 0.8";
 
-        EPCompiled epCompiled = compiler.compile(q1 + q2 + q3 + q4 + q5, arguments);
+        EPCompiled epCompiled = compiler.compile(q1 + q2 + q4 + q5 + q6, arguments);
 
         EPRuntime runtime = EPRuntimeProvider.getDefaultRuntime(configuration);
         runtime.initialize();
@@ -53,21 +50,18 @@ public class Main {
         EPStatement avgStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgByKey");
         avgStatement.addListener(new Listener.AvgEventListener());
 
-        //prints avg for sensor sequence
-        EPStatement avgSeqStatement = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "AvgOverall");
-        avgSeqStatement.addListener(new Listener.SeqAvgListener());
-
+        //prints the sensor sequence
+        EPStatement sensorSeq = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "SensorSequence");
+        sensorSeq.addListener(new Listener.SeqListener());
         // Traffic Jam
         EPStatement checkTrafficJam = runtime.getDeploymentService().getStatement(deployment.getDeploymentId(), "CheckForTrafficJam");
         checkTrafficJam.addListener(new Listener.TrafficEventListener());
 
         while (true) {
             Thread.sleep(300);
-
             int currentSensor = rand.nextInt(rangeSensor);
             int numSpeedValues = rand.nextInt(rangeAmountSensordata);
             List<Double> speedValues = new ArrayList<>();
-
             for (int i = 0; i < numSpeedValues; i++) {
                 double s;
                 if (rand.nextDouble() < 0.1) //if random number is smaller than 10%, for testing purpose
@@ -76,14 +70,9 @@ public class Main {
                     s = minSpeed + (maxSpeed - minSpeed) * rand.nextDouble(); // Generate value between max and min
                 speedValues.add(s);
             }
-
-            // https://esper.espertech.com/release-7.0.0/esper-reference/html/configuration.html#config-engine-time-source
-            // eigentlich sollte es auch per default gehen, aber ich bekomme den wert nicht abgefragt
             long timestamp = System.currentTimeMillis();
-
             runtime.getEventService().sendEventBean(new SensorData(currentSensor, speedValues, timestamp), "SensorData");
         }
-
     }
 
 }

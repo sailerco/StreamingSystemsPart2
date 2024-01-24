@@ -5,12 +5,14 @@ import com.espertech.esper.runtime.client.EPRuntime;
 import com.espertech.esper.runtime.client.EPStatement;
 import com.espertech.esper.runtime.client.UpdateListener;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
+
+import static org.example.Main.seq;
 
 public class Listener {
+
+    static Map<Integer, ArrayList<Double>> sensorHistory = new HashMap<>();
+
     static class SensorEventListener implements UpdateListener {
         @Override
         public void update(EventBean[] newData, EventBean[] oldData, EPStatement statement, EPRuntime runtime) {
@@ -43,22 +45,29 @@ public class Listener {
                 int id = (int) eventBean.get("id");
                 if (eventBean.get("averageSpeed") != null) {
                     double averageSpeed = (double) eventBean.get("averageSpeed");
-                    System.out.println("Average speed for ID " + id + " is " + String.format(Locale.US, "%.2f km/h", averageSpeed));
+
+                    if (sensorHistory.get(id) != null) sensorHistory.get(id).add(averageSpeed);
+                    else sensorHistory.put(id, new ArrayList<>(List.of(averageSpeed)));
+
+                    System.out.print("Average Speeds for Sensor " + id + " over time were : ");
+                    sensorHistory.get(id).forEach(speed -> System.out.printf(Locale.US, "%.2f km/h; ", speed));
+                    System.out.println();
                 } else
                     System.out.println("There were no measurements for " + id + " in this window");
             }
         }
     }
 
-    static class SeqAvgListener implements UpdateListener {
+    static class SeqListener implements UpdateListener {
         @Override
         public void update(EventBean[] newData, EventBean[] oldData, EPStatement statement, EPRuntime runtime) {
+            StringBuilder builder = new StringBuilder("Sensor Sequence " + seq + " | in current time window | ");
             for (EventBean eventBean : newData) {
-                if (newData != null && newData.length > 0) {
-                    double averageSpeed = (double) newData[0].get("overallAverageSpeed");
-                    System.out.println("Average speed over sequence is " + String.format(Locale.US, "%.2f km/h", averageSpeed));
-                }
+                int id = (int) eventBean.get("id");
+                double speed = (double) eventBean.get("speed");
+                builder.append("Sensor ").append(id).append(": ").append(String.format(Locale.US, "%.2f km/h", speed)).append("; ");
             }
+            System.out.println(builder);
         }
     }
 
