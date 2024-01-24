@@ -5,6 +5,7 @@ import org.apache.beam.sdk.coders.StringUtf8Coder;
 import org.apache.beam.sdk.io.kafka.KafkaIO;
 import org.apache.beam.sdk.options.PipelineOptions;
 import org.apache.beam.sdk.options.PipelineOptionsFactory;
+import org.apache.beam.sdk.schemas.transforms.Group;
 import org.apache.beam.sdk.transforms.*;
 import org.apache.beam.sdk.transforms.windowing.*;
 import org.apache.beam.sdk.values.KV;
@@ -15,16 +16,14 @@ import org.example.Kafka.Producer;
 import org.joda.time.Duration;
 import org.joda.time.Instant;
 
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Main {
-    private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     public static String topic = "Measurements" + UUID.randomUUID(); //random topic for testing purposes
     static int batchSize = 1;
     static String bootstrapServers = "localhost:29092";
-    static String[] sensorgroup = new String[]{"1", "2"};
+    static String[] sensorSeq = new String[]{"1", "2"};
     static Map<String, List<Double>> sensorsThroughTime = new HashMap<>();
     static int windowCount = 0;
 
@@ -32,7 +31,7 @@ public class Main {
         PipelineOptions options = PipelineOptionsFactory.create();
         Pipeline p = Pipeline.create(options);
         new KafkaTopicCreator().createTopic(topic, 1);
-        List<String> sensorList = Arrays.asList(sensorgroup);
+        List<String> sensorList = Arrays.asList(sensorSeq);
 
         Producer producer = new Producer();
 
@@ -73,27 +72,25 @@ public class Main {
         avg.apply("Print mean", ParDo.of(new PrintAvg()));
 
         avg.apply("Filter Sensor-Set", Filter.by((SerializableFunction<KV<String, Double>, Boolean>) input -> sensorList.contains(input.getKey())))
-                .apply(Values.create())
-                .apply("Sum of Sensors", Sum.doublesGlobally().withoutDefaults())
-                .apply("Mean Value", ParDo.of(new MeanOfSum()))
-                .apply("Print Mean Sensor-Set", ParDo.of(new PrintAvgOfSequence()))
+                .apply(Group.globally())
+                .apply("Print Sensor Sequence", ParDo.of(new PrintSequence()))
                 .apply("Print all avg for sensor", ParDo.of(new PrintMap()));
 
 
         p.run().waitUntilFinish();
     }
 
-    static class PrintMap extends DoFn<Double, Double> {
+    static class PrintMap extends DoFn<Iterable<KV<String, Double>>, Iterable<KV<String, Double>>> {
         @ProcessElement
-        public void processElement(ProcessContext c) {
+        public void processElement() {
             windowCount++;
             for (Map.Entry<String, List<Double>> entry : sensorsThroughTime.entrySet()) {
                 String sensorName = entry.getKey();
                 List<Double> avgSpeeds = entry.getValue();
                 // an vorletzter Stelle einfügen
                 int indexToInsert = avgSpeeds.size() - 1;
-                // fülle mit null auf falls Sensor keinen Wert hatte in einem Zeitfenster und daher auch kein avg (avg = 0)
-                while(avgSpeeds.size() < windowCount) {
+                // fill up with zero if sensor had no value in a time window
+                while (avgSpeeds.size() < windowCount) {
                     avgSpeeds.add(indexToInsert, 0.0);
                     sensorsThroughTime.put(sensorName, avgSpeeds);
                 }
@@ -118,10 +115,12 @@ public class Main {
         }
     }
 
-    static class PrintAvgOfSequence extends DoFn<Double, Double> {
+    static class PrintSequence extends DoFn<Iterable<KV<String, Double>>, Iterable<KV<String, Double>>> {
         @ProcessElement
         public void processElement(ProcessContext c) {
-            System.out.println("Avg over the current time window and given sequence " + String.format(Locale.US, "%.3fkm/h", c.element()));
+            StringBuilder builder = new StringBuilder("Sensor Sequence " + Arrays.toString(sensorSeq) + " | in the current time window | ");
+            c.element().forEach(kv -> builder.append("Sensor ").append(kv.getKey()).append(String.format(Locale.US, ": %.2f km/h; ", kv.getValue())));
+            System.out.println(builder);
             c.output(c.element());
         }
     }
@@ -179,13 +178,6 @@ public class Main {
             if (!filteredList.isEmpty()) {
                 out.output(KV.of(input.getKey(), filteredList));
             }
-        }
-    }
-
-    static class MeanOfSum extends DoFn<Double, Double> {
-        @ProcessElement
-        public void processElement(ProcessContext c) {
-            c.output(c.element() / sensorgroup.length);
         }
     }
 }
