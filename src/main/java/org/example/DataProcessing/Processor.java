@@ -51,18 +51,29 @@ public class Processor {
     }
 
     //computes the avg speed over the given sensor seq and at a specific timeframe number (Aufgabe 2)
-    public double calculatesAvgSpeedInSection(String[] sensorSeq, int timeframeNumber, int timeframe) {
-        ArrayList<Double> avgSpeeds = new ArrayList<>();
+    public void displaySequence(String[] sensorSeq, int timeframeNumber, int timeframe) {
+        StringBuilder builder = new StringBuilder("Sensor Sequence " + Arrays.toString(sensorSeq) + " | in given window number " + timeframeNumber + " | ");
         for (String id : sensorSeq) {
-            if (avgOfProcessedData.get(id) != null && avgOfProcessedData.get(id).get(timeframeNumber) != null)
-                avgSpeeds.add(avgOfProcessedData.get(id).get(timeframeNumber));
+            if (avgOfProcessedData.get(id) != null && avgOfProcessedData.get(id).get(timeframeNumber) != null) {
+                double speed = avgOfProcessedData.get(id).get(timeframeNumber);
+                builder.append("Sensor ").append(id).append(": ").append(String.format(Locale.US, "%.2f km/h", speed)).append("; ");
+            }
         }
-        double res = calculateAvgInKMH(avgSpeeds, false);
-        System.out.println("In the " + timeframeNumber + "# time-window there was a avg speed of "
-                + String.format(Locale.US, "%.2f", res) + "km/h over the sensor sequence " + Arrays.toString(sensorSeq));
+        System.out.println(builder);
         Pair<Date> window = getTimeframeRange(timeframeNumber, timeframe);
         System.out.println("--> Time window was between " + window.first() + " and " + window.second());
-        return res;
+    }
+
+    //display the average per key in each time windows
+    public void displayAvg(int timeframe) {
+        avgOfProcessedData.forEach((sensor, timeAndSpeeds) -> {
+            if (timeAndSpeeds.isEmpty()) System.out.println("Sensor " + sensor + " has not detected any speed");
+            else {
+                System.out.print("Sensor " + sensor + " | timeframe(s) of length: " + timeframe + "ms | average speeds: ");
+                timeAndSpeeds.forEach((window, speed) -> System.out.printf(Locale.US, "%.2f km/h (window number %d); ", speed, window));
+                System.out.println();
+            }
+        });
     }
 
 

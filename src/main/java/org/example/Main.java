@@ -5,8 +5,6 @@ import org.example.Kafka.KafkaTopicCreator;
 import org.example.Kafka.Producer;
 
 import java.text.ParseException;
-import java.util.Locale;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.example.TestGenerator.sensorCount;
@@ -34,21 +32,12 @@ public class Main {
         Thread.sleep(4000);
 
         while (true) {
+            Thread.sleep(1000);
             new TestGenerator().generate(producer, batchSize);
             Thread.sleep(100);
-            printAvg(processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe));
-            processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
+            processor.calculateAvgForEachSensorInTimeframe(sensorCount, timeframe);
+            processor.displayAvg(timeframe);
+            processor.displaySequence(new String[]{"1", "2", "3"}, 0, timeframe);
         }
-    }
-
-    public static void printAvg(Map<String, Map<Integer, Double>> avgs) {
-        avgs.forEach((sensor, timeAndSpeeds) -> {
-            if (timeAndSpeeds.isEmpty()) System.out.println("Sensor " + sensor + " has not detected any speed");
-            else {
-                System.out.print("Sensor " + sensor + " | timeframe(s) of length: " + timeframe + "ms | average speeds: ");
-                timeAndSpeeds.forEach((window, speed) -> System.out.printf(Locale.US, "%.2f km/h (window number %d); ", speed, window));
-                System.out.println();
-            }
-        });
     }
 }

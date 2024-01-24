@@ -52,15 +52,6 @@ class ProcessorTest {
     }
 
     @Test
-    void calculatesAvgSpeedInSection() {
-        processor.avgOfProcessedData.put("1", Map.of(0, 10.0));
-        processor.avgOfProcessedData.put("2", Map.of(0, 15.0));
-        processor.avgOfProcessedData.put("3", Map.of(0, 20.0));
-        double result = processor.calculatesAvgSpeedInSection(new String[]{"1", "2", "3"}, 0, timeframe);
-        assertEquals(15.0, result);
-    }
-
-    @Test
     void calculateAvgInKMH() {
         List<Double> speeds = Arrays.asList(10.0, 15.0, 20.0);
         double avgSpeed = processor.calculateAvgInKMH(speeds, true);
