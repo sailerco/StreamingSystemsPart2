@@ -120,8 +120,7 @@ public class Processor {
 
     //returns the timeframe number based on the first occurring ate and the timeframe
     private int getTimeframeNumber(long time, int timeframe) {
-        //long first = results.getFirst().timestamp.getTime();
-        long first = results.first().timestamp.getTime();
+        long first = results.getFirst().timestamp.getTime();
         if (time >= first) return (int) ((time - first) / timeframe);
         else return -1;
     }
@@ -132,12 +131,9 @@ public class Processor {
     }
     //returns the start and end date based on the given timeframe number
     private Pair<Date> getTimeframeRange(int timeframeNumber, int timeframe) {
-        //long first = results.getFirst().timestamp.getTime();
-        long first = results.first().timestamp.getTime();
-
+        long first = results.getFirst().timestamp.getTime();
         long start = first + ((long) timeframe * timeframeNumber);
         long end = first + ((long) timeframe * (timeframeNumber + 1));
-
         return new Pair<>(new Date(start), new Date(end));
     }
 }
