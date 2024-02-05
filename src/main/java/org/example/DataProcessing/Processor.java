@@ -9,8 +9,7 @@ import java.util.*;
 public class Processor {
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     Consumer consumer = new Consumer();
-    //List<Data> results = new ArrayList<>();
-    TreeSet<Data> results = new TreeSet<>(Comparator.comparing(Data::getDate)); //TODO: think about an alternative because this could lead to performance issues
+    TreeSet<Data> results = new TreeSet<>(Comparator.comparing(Data::getDate));
     Map<String, Map<Integer, Double>> avgOfProcessedData = new HashMap<>(); //ID : (Time, Speed)
 
     public void consumeData() throws ParseException {
