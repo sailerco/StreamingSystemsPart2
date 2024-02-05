@@ -20,8 +20,6 @@ public class Main {
     static String seq = "1, 2, 3";
 
     public static void main(String[] args) throws InterruptedException, EPCompileException, EPDeployException {
-        // http://www.esper.espertech.com/release-7.1.0/esper-reference/html/gettingstarted.html
-
         Configuration configuration = new Configuration();
         configuration.getCommon().addEventType(SensorData.class);
         configuration.getCommon().addEventType(FlattenedData.class);
